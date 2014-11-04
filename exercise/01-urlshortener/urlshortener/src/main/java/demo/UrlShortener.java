@@ -55,7 +55,6 @@ public class UrlShortener {
     @RequestMapping(value = "{hash}", method = RequestMethod.GET)
     ResponseEntity<?> get(@PathVariable String hash) {
         String url = urlMap.get(hash);
-        //String url = redisTemplate.opsForValue().get(hash);
         // 本当はリダイレクトするのだが、今回はレスポンスボディに入れて200を返す
         if (url != null) {
             return new ResponseEntity<>(url, HttpStatus.OK);
