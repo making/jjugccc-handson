@@ -59,7 +59,7 @@ public class App {
         return "redirect:/";
     }
 
-    @RequestMapping(value = "/{hash}", method = RequestMethod.GET)
+    @RequestMapping(value = "{hash}", method = RequestMethod.GET)
     String redirect(@PathVariable String hash) throws IOException {
         // Tips: プレースホルダを利用するとURLエンコーディングが行われる。shortenメソッド内ではエンコーディング不要だった。
         String url = restTemplate.getForObject(apiUrl + "/{hash}", String.class, Collections.singletonMap("hash", hash));
