@@ -1,0 +1,1 @@
+spring.cloud.config.server.uri: https://github.com/making/jjugccc-handson-config-repo

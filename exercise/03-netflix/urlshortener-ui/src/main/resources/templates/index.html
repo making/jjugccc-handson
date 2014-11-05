@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>UrlShortener</title>
+</head>
+<body>
+<p th:if="${shortenUrl}">Shorten! <a th:href="${shortenUrl}"><span th:text="${shortenUrl}">http://goo.gl/aaaaa</span></a></p>
+
+<form th:action="@{/shorten}" th:object="${shortenForm}" method="POST">
+    URL: <input type="text" name="url"/>
+    <span th:if="${#fields.hasErrors('url')}" th:errors="*{url}" class="help-block">error!</span>
+    <input type="submit" name="shorten"/>
+</form>
+</body>
+</html>
