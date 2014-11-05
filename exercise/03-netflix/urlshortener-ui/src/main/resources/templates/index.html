@@ -9,7 +9,7 @@
 
 <form th:action="@{/shorten}" th:object="${shortenForm}" method="POST">
     URL: <input type="text" name="url"/>
-    <span th:if="${#fields.hasErrors('url')}" th:errors="*{url}" class="help-block">error!</span>
+    <span th:if="${#fields.hasErrors('url')}" th:errors="*{url}">error!</span>
     <input type="submit" name="shorten"/>
 </form>
 </body>
