@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -20,7 +22,8 @@ import java.nio.charset.StandardCharsets;
 @EnableAutoConfiguration
 @ComponentScan
 @RestController
-//@RefreshScope
+@RefreshScope
+@EnableEurekaClient
 public class UrlShortener {
     public static void main(String[] args) {
         SpringApplication.run(UrlShortener.class, args);

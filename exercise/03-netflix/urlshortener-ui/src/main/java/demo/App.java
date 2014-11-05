@@ -1,14 +1,20 @@
 package demo;
 
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.URL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+import org.springframework.cloud.netflix.hystrix.EnableHystrix;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +34,8 @@ import java.util.Collections;
 @ComponentScan
 @Controller
 @Configuration
+@EnableEurekaClient
+@EnableHystrix
 public class App {
     @Autowired
     RestTemplate restTemplate;
@@ -84,5 +92,23 @@ class ShortenForm {
 
     public String getUrl() {
         return url;
+    }
+}
+
+@Component
+class RemoteService {
+    @Autowired
+    RestTemplate restTemplate;
+    Logger logger = LoggerFactory.getLogger(RemoteService.class);
+
+    @HystrixCommand(fallbackMethod = "defalutCallApp")
+    public String callApp() {
+        logger.info("calling");
+        return restTemplate.getForObject("http://urlshortener", String.class);
+    }
+
+    public String defalutCallApp() {
+        logger.info("failed");
+        return "failed!";
     }
 }

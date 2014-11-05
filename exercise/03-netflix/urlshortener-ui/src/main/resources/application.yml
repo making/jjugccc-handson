@@ -2,3 +2,13 @@
 spring:
   thymeleaf.cache: false
   main.show-banner: false
+
+server.port: 9999
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    hostname: ${APPLICATION_DOMAIN:127.0.0.1}
+    nonSecurePort: ${server.port}
