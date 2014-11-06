@@ -9,13 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.cloud.netflix.hystrix.EnableHystrix;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -38,9 +38,7 @@ import java.util.Collections;
 @EnableHystrix
 public class App {
     @Autowired
-    RestTemplate restTemplate;
-    @Value("${urlshorten.api.url:http://localhost:8081}")
-    String apiUrl;
+    ShortenService shortenService;
 
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);
@@ -61,23 +59,15 @@ public class App {
         if (result.hasErrors()) {
             return "index";
         }
-        URI target = URI.create(apiUrl + "/" + URLDecoder.decode(form.getUrl(), "UTF-8")); // //が/に短縮されるのを防止
-        String shortenUrl = restTemplate.postForObject(target, null, String.class);
+        String shortenUrl = shortenService.shorten(form.getUrl());
         attributes.addFlashAttribute("shortenUrl", shortenUrl);
         return "redirect:/";
     }
 
     @RequestMapping(value = "{hash}", method = RequestMethod.GET)
-    String redirect(@PathVariable String hash) throws IOException {
-        // Tips: プレースホルダを利用するとURLエンコーディングが行われる。shortenメソッド内ではエンコーディング不要だった。
-        String url = restTemplate.getForObject(apiUrl + "/{hash}", String.class, Collections.singletonMap("hash", hash));
+    String redirect(@PathVariable String hash) {
+        String url = shortenService.getUrl(hash);
         return "redirect:" + url;
-    }
-
-    @Bean
-    RestTemplate restTemplate() {
-        // TODO spring-cloud-netflixに変える
-        return new RestTemplate();
     }
 }
 
@@ -95,20 +85,36 @@ class ShortenForm {
     }
 }
 
-@Component
-class RemoteService {
+@Service
+@RefreshScope
+class ShortenService {
     @Autowired
     RestTemplate restTemplate;
-    Logger logger = LoggerFactory.getLogger(RemoteService.class);
+    @Value("${urlshorten.api.url:http://localhost:8081}")
+    String apiUrl;
+    Logger logger = LoggerFactory.getLogger(ShortenService.class);
 
-    @HystrixCommand(fallbackMethod = "defalutCallApp")
-    public String callApp() {
-        logger.info("calling");
-        return restTemplate.getForObject("http://urlshortener", String.class);
+    @HystrixCommand(fallbackMethod = "defaultShorten")
+    public String shorten(String url) throws IOException {
+        logger.info("calling shorten {}", url);
+        URI target = URI.create(apiUrl + "/" + URLDecoder.decode(url, "UTF-8")); // TOO //が/に短縮されるのを防止
+        return restTemplate.postForObject(target, null, String.class);
     }
 
-    public String defalutCallApp() {
-        logger.info("failed");
+    public String defaultShorten(String url) throws IOException {
+        logger.info("failed shorten {}", url);
+        return "failed!";
+    }
+
+    @HystrixCommand(fallbackMethod = "defaultGetUrl")
+    public String getUrl(String hash) {
+        logger.info("calling getUrl {}", hash);
+        // Tips: プレースホルダを利用するとURLエンコーディングが行われる。shortenメソッド内ではエンコーディング不要だった。
+        return restTemplate.getForObject(apiUrl + "/{hash}", String.class, Collections.singletonMap("hash", hash));
+    }
+
+    public String defaultGetUrl(String hash) {
+        logger.info("failed getUrl {}", hash);
         return "failed!";
     }
 }
