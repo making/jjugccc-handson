@@ -34,7 +34,7 @@
 	</build>
 
 	<properties>
-		<spring-cloud-config.version>1.0.0.BUILD-SNAPSHOT</spring-cloud-config.version>
+		<spring-cloud-config.version>1.0.0.M2</spring-cloud-config.version>
 	</properties>
 
 	<dependencyManagement>
