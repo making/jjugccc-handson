@@ -4,11 +4,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>demo</groupId>
-    <artifactId>urlshortener</artifactId>
+    <artifactId>exercise01-urlshortener</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>urlshortener</name>
+    <name>exercise01-urlshortener</name>
     <description>Demo project for Spring Boot</description>
 
     <parent>
