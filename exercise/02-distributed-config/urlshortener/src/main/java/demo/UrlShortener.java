@@ -5,22 +5,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 
 @EnableAutoConfiguration
 @ComponentScan
 @RestController
 //@RefreshScope
+@EnableEurekaClient
 public class UrlShortener {
     public static void main(String[] args) {
         SpringApplication.run(UrlShortener.class, args);
@@ -35,13 +34,11 @@ public class UrlShortener {
     final UrlValidator urlValidator = new UrlValidator(new String[]{"http", "https"});
 
     /**
-     * curl -v -X POST http://localhost:8080/http://google.com
+     * curl -v -X POST http://localhost:8080 -d "url=http://google.com"
      */
-    @RequestMapping(value = "**", method = RequestMethod.POST)
-    ResponseEntity<String> save(HttpServletRequest req) {
-        // リクエストURLのうちコンテキストパス以降を取得する。
-        String queryParams = (req.getQueryString() != null) ? "?" + req.getQueryString() : "";
-        String url = (req.getRequestURI() + queryParams).substring(1);
+    @RequestMapping(value = "/", method = RequestMethod.POST)
+    ResponseEntity<String> save(@RequestParam String url) {
+        System.out.println(url);
         if (urlValidator.isValid(url)) {
             String hash = com.google.common.hash.Hashing.murmur3_32().hashString(url, StandardCharsets.UTF_8).toString();
             redisTemplate.opsForValue().set(hash, url);

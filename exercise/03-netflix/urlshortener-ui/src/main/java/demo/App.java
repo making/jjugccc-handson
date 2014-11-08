@@ -14,8 +14,13 @@ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.cloud.netflix.hystrix.EnableHystrix;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
-import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -26,9 +31,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URLDecoder;
-import java.util.Collections;
+
+import static java.util.Collections.singletonMap;
 
 @EnableAutoConfiguration
 @ComponentScan
@@ -38,7 +42,7 @@ import java.util.Collections;
 @EnableHystrix
 public class App {
     @Autowired
-    ShortenService shortenService;
+    RemoteCommand remoteCommand;
 
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);
@@ -59,14 +63,14 @@ public class App {
         if (result.hasErrors()) {
             return "index";
         }
-        String shortenUrl = shortenService.shorten(form.getUrl());
+        String shortenUrl = remoteCommand.shorten(form.getUrl());
         attributes.addFlashAttribute("shortenUrl", shortenUrl);
         return "redirect:/";
     }
 
     @RequestMapping(value = "{hash}", method = RequestMethod.GET)
     String redirect(@PathVariable String hash) {
-        String url = shortenService.getUrl(hash);
+        String url = remoteCommand.getUrl(hash);
         return "redirect:" + url;
     }
 }
@@ -85,23 +89,27 @@ class ShortenForm {
     }
 }
 
-@Service
+@Component
 @RefreshScope
-class ShortenService {
+class RemoteCommand {
     @Autowired
     RestTemplate restTemplate;
     @Value("${urlshorten.api.url:http://localhost:8081}")
     String apiUrl;
-    Logger logger = LoggerFactory.getLogger(ShortenService.class);
+    Logger logger = LoggerFactory.getLogger(RemoteCommand.class);
 
     @HystrixCommand(fallbackMethod = "defaultShorten")
-    public String shorten(String url) throws IOException {
+    public String shorten(String url) {
         logger.info("calling shorten {}", url);
-        URI target = URI.create(apiUrl + "/" + URLDecoder.decode(url, "UTF-8")); // TOO //が/に短縮されるのを防止
-        return restTemplate.postForObject(target, null, String.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("url", url);
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+        return restTemplate.postForEntity(apiUrl, request, String.class).getBody();
     }
 
-    public String defaultShorten(String url) throws IOException {
+    public String defaultShorten(String url) {
         logger.info("failed shorten {}", url);
         return "failed!";
     }
@@ -109,8 +117,7 @@ class ShortenService {
     @HystrixCommand(fallbackMethod = "defaultGetUrl")
     public String getUrl(String hash) {
         logger.info("calling getUrl {}", hash);
-        // Tips: プレースホルダを利用するとURLエンコーディングが行われる。shortenメソッド内ではエンコーディング不要だった。
-        return restTemplate.getForObject(apiUrl + "/{hash}", String.class, Collections.singletonMap("hash", hash));
+        return restTemplate.getForObject(apiUrl + "/{hash}", String.class, singletonMap("hash", hash));
     }
 
     public String defaultGetUrl(String hash) {

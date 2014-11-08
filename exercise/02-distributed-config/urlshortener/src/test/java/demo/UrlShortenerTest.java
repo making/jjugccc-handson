@@ -20,8 +20,6 @@ import static org.hamcrest.Matchers.is;
 public class UrlShortenerTest {
     @Value("${local.server.port}")
     int port;
-    @Value("${urlshorten.url:http://localhost:${server.port:8080}}")
-    String urlShortenUrl;
 
     @Before
     public void setUp() {
@@ -32,16 +30,16 @@ public class UrlShortenerTest {
     public void testSaveAndGet() throws Exception {
         given().log().all()
                 .when()
-                .urlEncodingEnabled(false)
-                .post("/http://google.com")
+                .body("url=http://google.com")
+                .contentType("application/x-www-form-urlencoded")
+                .post()
                 .then()
                 .log().all()
                 .statusCode(200)
-                .body(is(urlShortenUrl + "/58f3ae21"));
+                .body(is("http://localhost:0/58f3ae21"));
 
         given().log().all()
                 .when()
-                .urlEncodingEnabled(false)
                 .get("/58f3ae21")
                 .then()
                 .log().all()
@@ -53,8 +51,9 @@ public class UrlShortenerTest {
     public void testInvalidUrl() throws Exception {
         given().log().all()
                 .when()
-                .urlEncodingEnabled(false)
-                .post("/hoge")
+                .body("url=hoge")
+                .contentType("application/x-www-form-urlencoded")
+                .post()
                 .then()
                 .log().all()
                 .statusCode(400);
@@ -64,7 +63,6 @@ public class UrlShortenerTest {
     public void testNotExistHash() throws Exception {
         given().log().all()
                 .when()
-                .urlEncodingEnabled(false)
                 .get("/hoge")
                 .then()
                 .log().all()
