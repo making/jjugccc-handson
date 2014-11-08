@@ -6,8 +6,7 @@
     <groupId>org.demo</groupId>
     <artifactId>exercise03-hystrix-dashboard</artifactId>
     <packaging>jar</packaging>
-    <name>Spring Cloud Netflix Hystrix</name>
-    <url>http://projects.spring.io/spring-cloud/</url>
+    <name>exercise03-hystrix-dashboard</name>
     <version>1.0.0.BUILD-SNAPSHOT</version>
 
     <parent>
@@ -68,7 +67,7 @@
         <repository>
             <id>spring-milestones</id>
             <name>Spring Milestones</name>
-            <url>http://repo.spring.io/libs-miletone-local</url>
+            <url>http://repo.spring.io/libs-milestone-local</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
