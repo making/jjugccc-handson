@@ -711,3 +711,23 @@ Config Server、Config ClientともにCtrl+Cで終了してください。(Gitbu
 
 .. figure:: ./images/exercise03-01.png
    :width: 80%
+
+演習プロジェクトのインポート
+--------------------------------------------------------------------------------
+「File」->「Import Module」で演習プロジェクトをインポートします。
+「(ハンズオン資材のルートフォルダ)/exercise/03-netflix」を選択してください。
+
+.. figure:: ./images/import-exercise03-01.png
+   :width: 80%
+
+.. figure:: ./images/import-exercise03-02.png
+   :width: 80%
+
+* configserverはConfig Serverを設定したプロジェクトです。演習2と同じです。
+* eureka-serverはEurekaをService RegistryであるEurekaを起動するプロジェクトです。ダッシュボードも提供します。
+* hystrix-dashboardはHystrixのダッシュボードを提供するプロジェクトです。
+* urlshortenerは演習2にConfig Clientの依存関係を追加したプロジェクトです。
+* urlshortener-uiは「URL短縮サービス」の画面です。RestClientでurlshortenerにアクセスします。
+
+
+どちらも既に設定済みで、新規にコーディングする必要はありません。
