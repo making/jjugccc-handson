@@ -539,9 +539,9 @@ Git上の変更が即反映されています。
 「URL短縮サービス」(Config Client)の起動
 --------------------------------------------------------------------------------
 
- 次にConfig Clientとして、「URL短縮サービス」を起動します。
+次にConfig Clientとして、「URL短縮サービス」を起動します。
 
- インポートしたプロジェクト(exercise/02-distributed-config/urlshortener)のpom.xmlに以下の依存関係が追加されていることを確認してください。
+インポートしたプロジェクト(exercise/02-distributed-config/urlshortener)のpom.xmlに以下の依存関係が追加されていることを確認してください。
 
 .. code-block:: xml
 
