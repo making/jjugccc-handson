@@ -6,7 +6,6 @@ target
 .project
 .settings
 *-diff.txt
-*.zip
 Note.txt
 *~
 *.iml
