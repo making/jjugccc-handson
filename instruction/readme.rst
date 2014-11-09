@@ -24,7 +24,7 @@ cURL (Windowsの場合)
 Git Bash (Windowsの場合)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-JQ (オプション)
+jq (オプション)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 必須ではないですが、JSON出力の整形用に\ http://stedolan.github.io/jq/\ をインストールしておくと良いです。
 
@@ -64,7 +64,7 @@ Mavenリポジトリのコピー
 
 インポートするプロジェクトにほとんどのコードが実装されているので、課題で実装するコードはほんの数行です。
 
-プロジェクトの作成・インポート
+演習プロジェクトの作成・インポート
 --------------------------------------------------------------------------------
 
 新規プロジェクト作成
@@ -279,6 +279,8 @@ Windowsの場合、redis-server.exeを実行してください。
 
 書き換えた後に、課題1同様にテストが通れば課題2も完了です。
 
+起動したアプリケーションは終了しておいてください。Redisは起動したままにしてください。
+
 演習2 Spring Cloud Configで動的コンフィギュレーション
 ================================================================================
 演習2ではSpring Cloud Configを使った動的コンフィギュレーションを体験します。
@@ -304,8 +306,8 @@ Config ServerはデフォルトでGithubに接続しますが、今回はオフ�
 .. figure:: ./images/import-exercise02-02.png
    :width: 80%
 
-* configserver Config Serverを設定したプロジェクトです。
-* urlshortener 演習1にConfig Clientの依存関係を追加したプロジェクトです。
+* configserverはConfig Serverを設定したプロジェクトです。
+* urlshortenerは演習1にConfig Clientの依存関係を追加したプロジェクトです。
 
 どちらも既に設定済みで、新規にコーディングする必要はありません。
 
@@ -319,7 +321,7 @@ Gibucketを起動しましょう。8080番ポートを使用するので、こ�
     $ cd (ハンズオン資材のルートフォルダ)/software
     $ java -jar gitbucket.war
 
-ユーザー名/パスワードともに「root」でログインしてください。
+http://localhost:8080\ にアクセスしユーザー名/パスワードともに「root」でログインしてください。
 
 .. figure:: ./images/exercise02-02.png
    :width: 80%
@@ -365,12 +367,313 @@ Repository nameに「config-repo」を入力し、「Initialize this repository 
 .. figure:: ./images/exercise02-08.png
    :width: 80%
 
+Config Server起動
+--------------------------------------------------------------------------------
 
 「configserver」の\ ``bootstrap.yml``\ に以下の設定が行われていることを確認してください。
 
 .. code-block:: yaml
 
     spring.cloud.config.server.uri: http://localhost:8080/git/root/config-repo.git
+
+以下のコマンドでConfig Serverを起動起動してください。
+
+.. code-block:: bash
+
+    $ cd (ハンズオン資材のルートフォルダ)/exercise/02-distributed-config
+    $ mvn spring-boot:run -f configserver/pom.xml
+
+動作確認しましょう。
+
+.. code-block:: bash
+
+    $ curl http://localhost:8888/admin/env
+
+以下ではjqを使って整形した結果を示します。
+
+
+.. code-block:: bash
+
+    $ curl http://localhost:8888/admin/env | jq .
+    {
+      "defaultProperties": {
+        "spring.config.name": "configserver"
+      },
+      "applicationConfig: [classpath:/bootstrap.yml]": {
+        "spring.cloud.config.server.uri": "http://localhost:8080/git/root/config-repo.git"
+      },
+      "applicationConfig: [classpath:/configserver.yml]": {
+        "management.context_path": "/admin",
+        "spring.application.name": "configserver",
+        "server.port": 8888,
+        "info.component": "Config Server",
+        "spring.jmx.default_domain": "cloud.config.server"
+      },
+      // ... 省略
+    }
+
+\ ``spring.cloud.config.server.uri``\ が反映されていることを確認してください。
+
+次にコンフィギュレーションを取得します。app名はfoo、profile名はdefaultにします。
+
+.. code-block:: bash
+
+    $ curl http://localhost:8888/foo/default
+
+以下ではjqを使って整形した結果を示します。
+
+.. code-block:: bash
+
+    $ curl http://localhost:8888/foo/default | jq .
+    {
+      "propertySources": [
+        {
+          "source": {
+            "foo": "123456",
+            "bar": "abcdef"
+          },
+          "name": "http://localhost:8080/git/root/config-repo.git/foo.properties"
+        }
+      ],
+      "label": "master",
+      "name": "default"
+    }
+
+次にprofileを変更して取得しましょう。
+
+.. code-block:: bash
+
+    $ curl http://localhost:8888/foo/development
+
+
+以下ではjqを使って整形した結果を示します。
+
+.. code-block:: bash
+
+    $ curl http://localhost:8888/foo/development | jq .
+    {
+      "propertySources": [
+        {
+          "source": {
+            "foo": "Hello!"
+          },
+          "name": "http://localhost:8080/git/root/config-repo.git/foo-development.properties"
+        },
+        {
+          "source": {
+            "foo": "123456",
+            "bar": "abcdef"
+          },
+          "name": "http://localhost:8080/git/root/config-repo.git/foo.properties"
+        }
+      ],
+      "label": "master",
+      "name": "development"
+    }
+
+\ ``foo-development.properties``\ で上書きしていることが分かります。
+
+
+「URL短縮サービス」向けのコンフィギュレーション作成
+--------------------------------------------------------------------------------
+
+同様に、URL短縮サービス向けのコンフィギュレーションを「urlshortener.yml」に作成します。設定内容は以下の通りです。
+
+.. code-block:: yaml
+
+    urlshorten:
+      url: http://localhost:${server.port}
+    spring:
+      redis:
+        host: localhost # server host
+        password: # server password
+        port: 6379 # connection port
+        pool:
+          max-idle: 8 # pool settings ...
+          min-idle: 0
+          max-active: 8
+          max-wait: -1
+    endpoints.restart:
+      enabled: true
+
+.. figure:: ./images/exercise02-09.png
+   :width: 80%
+
+
+動作確認しましょう。(Config Serverの再起動は不要です)
+
+.. code-block:: bash
+
+    $ curl http://localhost:8888/urlshortener/default
+
+
+以下ではjqを使って整形した結果を示します。
+
+.. code-block:: bash
+
+    $ curl http://localhost:8888/urlshortener/default | jq .
+    {
+      "propertySources": [
+        {
+          "source": {
+            "spring.redis.pool.max-idle": 8,
+            "spring.redis.password": "",
+            "spring.redis.host": "localhost",
+            "spring.redis.port": 6379,
+            "urlshorten.url": "http://localhost:${server.port}",
+            "endpoints.restart.enabled": true,
+            "spring.redis.pool.max-active": 8,
+            "spring.redis.pool.min-idle": 0,
+            "spring.redis.pool.max-wait": -1
+          },
+          "name": "http://localhost:8080/git/root/config-repo.git/urlshortener.yml"
+        }
+      ],
+      "label": "master",
+      "name": "default"
+    }
+
+Git上の変更が即反映されています。
+
+
+「URL短縮サービス」(Config Client)の起動
+--------------------------------------------------------------------------------
+
+ 次にConfig Clientとして、「URL短縮サービス」を起動します。
+
+ インポートしたプロジェクト(exercise/02-distributed-config/urlshortener)のpom.xmlに以下の依存関係が追加されていることを確認してください。
+
+.. code-block:: xml
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+また、urlshortenerのbootstrap.ymlに
+
+.. code-block:: yaml
+
+    spring:
+      application:
+        name: urlshortener
+
+が設定されていることを確認してください。
+
+「URL短縮サービス」を起動しましょう。8080番ポートは既に起動しているので、プログラム引数に\ ``--server.port=8081``\ をつけて8081番ポートで起動します。
+
+.. code-block:: bash
+
+    $ cd (ハンズオン資材のルートフォルダ)/exercise/02-distributed-config
+    $ mvn spring-boot:run -f urlshortener/pom.xml -Drun.arguments="--server.port=8081"
+
+
+演習1同様に以下のリクエストを送ってください。(ポート名が変更されていることに気をつけてください)
+
+.. code-block:: bash
+
+    $ curl -X POST http://localhost:8081 -d "url=http://google.com"
+    http://localhost:8081/58f3ae21
+    $ curl -X GET http://localhost:8081/58f3ae21
+    http://google.com
+
+次にConfig Server(urlshortener.yml)の値を変えましょう。
+
+http://localhost:8080/root/config-repo/blob/master/urlshortener.yml\ にアクセスし、「Edit」ボタンをクリックしてください。
+
+.. figure:: ./images/exercise02-10.png
+   :width: 80%
+
+\ ``urlshorten.url``\ を\ ``http://localhost:9999``\ に変更して「Commit changes」をクリックしてください。(\ **この設定は演習3で使用します**\ )。
+
+.. figure:: ./images/exercise02-11.png
+   :width: 80%
+
+変更を反映する前に、Config Client上のプロパティを確認しましょう。
+
+.. code-block:: bash
+
+    $ curl -X GET http://localhost:8081/env/urlshorten.url
+    http://localhost:8081
+
+
+次にConfig Clientをrefreshします。
+
+.. code-block:: bash
+
+    $ curl -X POST http://localhost:8081/refresh
+    ["urlshorten.url"]
+    $ curl -X GET http://localhost:8081/env/urlshorten.url
+    http://localhost:9999
+
+変更が反映されました。しかし、以下の通りDI済みのプロパティに再DIはされていません。
+
+.. code-block:: bash
+
+    $ curl -X POST http://localhost:8081 -d "url=http://google.com"
+    http://localhost:8081/58f3ae21
+
+今度はConfig Clientをrestartします。
+
+.. code-block:: bash
+
+    $ curl -X POST http://localhost:8081/restart
+    {"message":"Restarting"}
+
+restart後は、最新のプロパティで再DIされていることがわかります。
+
+.. code-block:: bash
+
+    $ curl -X POST http://localhost:8081 -d "url=http://google.com"
+    http://localhost:9999/58f3ae21
+
+
+課題1 「URL短縮サービス」(Config Client)をRefreshスコープに変更
+--------------------------------------------------------------------------------
+「URL短縮サービス(\ ``UrlShortener``\ クラス)」へのプロパティインジェクション反映をrefreshで行えるように、
+\ ``UrlShortener``\ クラスをRefreshスコープに変更してください。
+
+.. code-block:: java
+
+    @EnableAutoConfiguration
+    @ComponentScan
+    @RestController
+    @RefreshScope // ここを追加
+    public class UrlShortener {
+        // 略
+    }
+
+\ ``mvn spring-boot:run``\ で起動した「URL短縮サービス」をCtrl+Cで終了して、再度実行してください。
+
+
+.. code-block:: bash
+
+    $ mvn spring-boot:run -f urlshortener/pom.xml -Drun.arguments="--server.port=8081"
+
+今回は以下のようにEnvエンドポイントにPOSTすることでコンフィギュレーションを変更しましょう。
+
+
+.. code-block:: bash
+
+    $ curl -X POST http://localhost:8081/env -d urlshorten.url=http://127.0.0.1:9999
+    {"urlshorten.url":"http://127.0.0.1:9999"}
+
+再度、refreshを行い、もう一度「URL短縮サービス」へリクエストを送りましょう。
+
+.. code-block:: bash
+
+    $ curl -X POST http://localhost:8081/refresh
+    []
+    $ curl -X POST http://localhost:8081 -d "url=http://google.com"
+    http://127.0.0.1:9999/58f3ae21
+
+restartすることなく、アプリケーションにプロパティが反映されたことがわかります。
+
+Config Server、Config ClientともにCtrl+Cで終了してください。(Gitbucket, Redisは起動したままにしてください。）
 
 演習3 Spring Cloud Netflixでマイクロサービスアーキテクチャ構築
 ================================================================================
