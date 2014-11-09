@@ -403,7 +403,7 @@ Config Server起動
 
     spring.cloud.config.server.uri: http://localhost:8080/git/root/config-repo.git
 
-以下のコマンドでConfig Serverを起動起動してください。
+以下のコマンドでConfig Serverを起動してください。
 
 .. code-block:: bash
 
@@ -724,10 +724,145 @@ Config Server、Config ClientともにCtrl+Cで終了してください。(Gitbu
    :width: 80%
 
 * configserverはConfig Serverを設定したプロジェクトです。演習2と同じです。
-* eureka-serverはEurekaをService RegistryであるEurekaを起動するプロジェクトです。ダッシュボードも提供します。
+* eureka-serverはService DiscoveryであるEurekaを起動するプロジェクトです。ダッシュボードも提供します。
 * hystrix-dashboardはHystrixのダッシュボードを提供するプロジェクトです。
 * urlshortenerは演習2にConfig Clientの依存関係を追加したプロジェクトです。
-* urlshortener-uiは「URL短縮サービス」の画面です。RestClientでurlshortenerにアクセスします。
+* urlshortener-uiは「URL短縮サービス」の画面です。\ ``RestClient``\ とClient LoadbalancerのRibboを使ってurlshortenerにアクセスします。
+
+どれも既に設定済みで、新規にコーディングする必要はありません。上から順番に起動します。
+
+演習2で起動したGitbucketが必要ですので、終了してしまった場合は再び実行してください。
 
 
-どちらも既に設定済みで、新規にコーディングする必要はありません。
+
+Config Serverの起動
+--------------------------------------------------------------------------------
+
+.. figure:: ./images/system-exercise03-01.png
+   :width: 80%
+
+演習2同様に、以下のコマンドでConfig Serverを起動してください。
+
+.. code-block:: bash
+
+    $ cd (ハンズオン資材のルートフォルダ)/exercise/03-netflix
+    $ mvn spring-boot:run -f configserver/pom.xml
+
+
+Service Discovery (Eureka Server)の起動
+--------------------------------------------------------------------------------
+
+.. figure:: ./images/system-exercise03-02.png
+   :width: 80%
+
+以下のコマンドでEureka Serverを起動してください。
+
+.. code-block:: bash
+
+    $ cd (ハンズオン資材のルートフォルダ)/exercise/03-netflix
+    $ mvn spring-boot:run -f eureka-server/pom.xml
+
+http://localhost:8761/\ でEureka Serverのダッシュボードにアクセスできます。
+
+
+.. figure:: ./images/exercise03-02.png
+   :width: 80%
+
+現時点ではEureka Serverに登録されているインスタンスはありません。
+
+Circuit Breaker Monitor (Hystrix Dashboard)の起動
+--------------------------------------------------------------------------------
+
+.. figure:: ./images/system-exercise03-03.png
+   :width: 80%
+
+以下のコマンドでHystrix Dashboardを起動してください。
+
+.. code-block:: bash
+
+    $ cd (ハンズオン資材のルートフォルダ)/exercise/03-netflix
+    $ mvn spring-boot:run -f hystrix-dashboard/pom.xml
+
+起動後、30秒経ったら\ `Eureka Serverのダッシュボード <http://localhost:8761>`_\ にアクセスしてください。
+
+.. figure:: ./images/exercise03-03.png
+   :width: 80%
+
+Hystrix DashboardEurekaに登録されたことが分かります(アーキテクチャ図に記されていませんが、Circuit Breaker MonitorからService Discoveryへの線相当です)。
+
+ではHystrix Dashboardにアクセスしましょう。http://localhost:7979\ にアクセスしてください。
+
+.. figure:: ./images/exercise03-04.png
+   :width: 80%
+
+中央の入力フォームにはHystrixを利用したサービスの情報を取得するためのevent streamのURLを指定することで、
+そのサービスをモニタリングすることができます。
+
+まだHystrixを利用したサービスがないため、ここではデモ用のMock Streamを使用します。http://localhost:7979/mock.stream\ を入力して、「Monitor Stream」をクリックしてください。
+
+
+.. figure:: ./images/exercise03-05.png
+   :width: 80%
+
+Hystrixのイベントをモニタリングできます。
+
+.. figure:: ./images/exercise03-06.png
+   :width: 80%
+
+後ほど「URL短縮サービス」のevent streamをモニタリングします。
+
+
+「URL短縮サービス」の起動
+--------------------------------------------------------------------------------
+
+
+.. figure:: ./images/system-exercise03-04.png
+   :width: 80%
+
+次に演習1から使い続けている「URL短縮サービス」を起動します。
+
+後ほどこの「URL短縮サービス」を3台起動します。Eurekaに別hostnameとして認識させるため、あらかじめ/etc/hostsに以下の設定を追加しておきます。
+
+.. code-block:: bash
+
+    127.0.0.1	urlshortener1 urlshortener2 urlshortener3
+
+尚、演習2のurlshortenに対して、以下の変更を加えています。
+
+\ ``UrlShortener``\ クラスがEurekaのクライアントになるために\ ``@EnableEurekaClient``\ を追加しています。
+
+.. code-block:: java
+
+    @EnableAutoConfiguration
+    @ComponentScan
+    @RestController
+    @RefreshScope
+    @EnableEurekaClient // 追加
+    public class UrlShortener {
+        // 略
+    }
+
+application.ymlにEurekaに関する情報を追加しています。
+
+.. code-block:: yaml
+
+    eureka:
+      client:
+        serviceUrl:
+          defaultZone: http://localhost:8761/eureka/
+      instance:
+        hostname: ${APPLICATION_DOMAIN:127.0.0.1}
+        nonSecurePort: ${server.port}
+
+「URL短縮サービス」UIの起動
+--------------------------------------------------------------------------------
+
+
+.. figure:: ./images/system-exercise03-05.png
+   :width: 80%
+
+「URL短縮サービス」のスケールアウト
+--------------------------------------------------------------------------------
+
+.. figure:: ./images/system-exercise03-06.png
+   :width: 80%
