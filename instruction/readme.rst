@@ -1,4 +1,4 @@
-JJUG CCC Fall 2014 [R5-3] Spring Bootハンズオン～Spring Bootで作るマイクロサービスアーキテクチャ！手順書
+JJUG CCC Fall 2014 [R5-3] Spring Bootハンズオン～Spring Bootで作るマイクロサービスアーキテクチャ！手順書 #jjug_ccc #ccc_r53
 
 .. contents:: 目次
   :depth: 2
@@ -14,15 +14,25 @@ Mac/Windowsユーザー向けに記述しています。Linuxで実施する場�
 
 Java SE 8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html\ からJava SE Development Kit 8u25 (8以上であればおそらくOK)をダウンロードして、
+インストールしてください。
+
+環境変数\ ``JAVA_HOME``\ の設定と\ ``PATH``\ の追加を必ず行ってください。
 
 Maven
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+http://ftp.meisei-u.ac.jp/mirror/apache/dist/maven/maven-3/3.2.3/binaries/apache-maven-3.2.3-bin.tar.gz\ からMavenをダウンロードして、
+展開したディレクトリのbinフォルダを環境変数\ ``PATH``\ に追加してください。
 
-cURL (Windowsの場合)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+尚、(ハンズオン資材のルートフォルダ)/software/apache-maven-3.2.3-bin.tar.gzにダウンロード済みです。
 
 Git Bash (Windowsの場合)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Windowsの場合、
+
+http://git-scm.com/download/win\ からGitをダウンロードしてインストールしてください。
+
+演習で実行するコマンドはGitに付属しているGit Bashを用いて実行してください。
 
 jq (オプション)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -31,9 +41,26 @@ jq (オプション)
 Redis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Macの場合は、以下を実行してください。
+
+.. code-block:: bash
+
+    $ cd (ハンズオン資材のルートフォルダ)/software/redis-2.8.17
+    $ tar xzvf redis-2.8.17.tar.gz
+    $ cd redis-2.8.17
+    $ make
+
+Windows 64ビットの場合は、(ハンズオン資材のルートフォルダ)/software/redis-2.8.17/redis-2.8.17.zipを展開してください。
+
+Windows 32ビットの場合は、(ハンズオン資材のルートフォルダ)/software/redis-2.8.17/edisbin.zipを展開してください。
+
+
+
 Gitbucket
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 https://github.com/takezoe/gitbucket/releases/download/2.5/gitbucket.war\ より、Gitbucketをダウンロードしてください。
+
+尚、(ハンズオン資材のルートフォルダ)/software/gitbucket.warにダウンロード済みです。
 
 IntelliJ IDEA
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -951,3 +978,69 @@ UIからサービスを呼び出すとモニタリング画面に反映されま
 
 .. figure:: ./images/system-exercise03-06.png
    :width: 80%
+
+最後に「URL短縮サービス」をあと2インスタンス起動し、Ribbonによるロードバランシングを体験しましょう。
+
+早速、「URL短縮サービス」を起動しましょう。
+
+インスタンス2はport: 8082,hostname: urlshortener2で起動します。
+
+.. code-block:: bash
+
+    $ cd (ハンズオン資材のルートフォルダ)/exercise/03-netflix
+    $ mvn spring-boot:run -f urlshortener/pom.xml \
+     -Drun.arguments="--server.port=8082,--eureka.instance.hostname=urlshortener2"
+
+インスタンス3はport: 8083,hostname: urlshortener3で起動します。
+
+.. code-block:: bash
+
+    $ cd (ハンズオン資材のルートフォルダ)/exercise/03-netflix
+    $ mvn spring-boot:run -f urlshortener/pom.xml \
+     -Drun.arguments="--server.port=8083,--eureka.instance.hostname=urlshortener3"
+
+
+ノード2、ノード3起動後30秒経ったら、\ `Eureka Serverのダッシュボード <http://localhost:8761>`_\ にアクセスしてください。
+
+.. figure:: ./images/exercise03-16.png
+   :width: 80%
+
+urlshortenerサービスに対して3つのインスタンスが登録されました。
+
+
+UIではRibbonを利用することで、特定のインスタンスにアクセスしているわけではなく、\ ``http://urlshortener``\ というようにサービス名に対してアクセスしており、
+ラウンドロビンのロードバランシングが行われます。
+
+いまの作りだと、どのインスタンスでURL短縮が行われているか分からないので、以下のような設定変更を行いましょう。
+
+.. code-block:: bash
+
+    curl -X POST http://localhost:8081/env -d "urlshorten.url=http://localhost:\${server.port}"
+    curl -X POST http://localhost:8081/refresh
+    curl -X POST http://localhost:8082/env -d "urlshorten.url=http://localhost:\${server.port}"
+    curl -X POST http://localhost:8082/refresh
+    curl -X POST http://localhost:8083/env -d "urlshorten.url=http://localhost:\${server.port}"
+    curl -X POST http://localhost:8083/refresh
+
+これでUIから何度もリクエストを送ると、各インスタンスが順番に使用されていることが分かります。
+
+.. figure:: ./images/exercise03-16.png
+    :width: 80%
+
+どれかのインスタンスを落としたり、復旧させたりして何が起こるか試してみてください。
+
+.. note::
+
+    単位時間辺りのエラー発生回数がしきい値を超えるとCiruitがOpen状態になり、一定時間ずっとエラーを返すようになります。
+
+
+まとめ
+================================================================================
+
+本演習を通じて以下の内容を学びました。
+
+* 演習1ではSpring Bootを使って簡単にマイクロサービスを作成する方法を学びました。また数行でRedisに対応する方法も学びました。
+* 演習2ではSpring Cloud Configを使って動的コンフィギュレーションの行い方を学びました。
+* 演習3ではSpring Cloud Netflixを使ってマイクロサービスアーキテクチャにおけるいくつかのパターンを実現しました。
+
+さらなる学習には\ `Spring CloudのReference <http://projects.spring.io/spring-cloud/spring-cloud.html>`_\ を参照してください。
