@@ -82,6 +82,8 @@ Mavenリポジトリのコピー
    :width: 80%
 
 
+本来は複数のマシンを用いて構築しますが、本演習では1つのマシン上で全てのサービスを起動します。
+
 演習1 Spring Bootで「URL短縮サービス」を作る
 ================================================================================
 
@@ -788,7 +790,7 @@ Circuit Breaker Monitor (Hystrix Dashboard)の起動
 .. figure:: ./images/exercise03-03.png
    :width: 80%
 
-Hystrix DashboardEurekaに登録されたことが分かります(アーキテクチャ図に記されていませんが、Circuit Breaker MonitorからService Discoveryへの線相当です)。
+Hystrix DashboardがEurekaに登録されたことが分かります(アーキテクチャ図に記されていませんが、Circuit Breaker MonitorからService Discoveryへの線相当です)。
 
 ではHystrix Dashboardにアクセスしましょう。http://localhost:7979\ にアクセスしてください。
 
@@ -854,11 +856,94 @@ application.ymlにEurekaに関する情報を追加しています。
         hostname: ${APPLICATION_DOMAIN:127.0.0.1}
         nonSecurePort: ${server.port}
 
+
+それでは「URL短縮サービス」を起動しましょう。portとEurekaに登録するhostnameを指定します。
+
+.. code-block:: bash
+
+    $ cd (ハンズオン資材のルートフォルダ)/exercise/03-netflix
+    $ mvn spring-boot:run -f urlshortener/pom.xml \
+     -Drun.arguments="--server.port=8081,--eureka.instance.hostname=urlshortener1"
+
+起動後、30秒経ったら\ `Eureka Serverのダッシュボード <http://localhost:8761>`_\ にアクセスしてください。
+
+.. figure:: ./images/exercise03-07.png
+   :width: 80%
+
+urlshortenerがEurekaに登録されたことが分かります。
+
+
 「URL短縮サービス」UIの起動
 --------------------------------------------------------------------------------
-
+最後のサービスとして「URL短縮サービス」UIを起動します。
 
 .. figure:: ./images/system-exercise03-05.png
+   :width: 80%
+
+起動する前にUI用のコンフィギュレーションを作成します。
+
+\ `Config Repository <http://localhost:8080/root/config-repo>`_\ にアクセスして、urlshortener-ui.ymlを作成し、以下の内容を記述してください。
+
+
+.. code-block:: yaml
+
+    urlshorten.api.url: http://urlshortener
+    endpoints.restart:
+      enabled: true
+
+
+.. figure:: ./images/exercise03-08.png
+   :width: 80%
+
+
+UIを9999番ポートで起動します。
+
+.. code-block:: bash
+
+    $ mvn spring-boot:run -f urlshortener-ui/pom.xml -Drun.arguments="--server.port=9999"
+
+
+起動後、30秒経ったら\ `Eureka Serverのダッシュボード <http://localhost:8761>`_\ にアクセスしてください。
+
+.. figure:: ./images/exercise03-09.png
+   :width: 80%
+
+urlshortener-uiがEurekaに登録されたことが分かります。
+
+それでは\ http://localhost:9999\ にアクセスしましょう。
+
+.. figure:: ./images/exercise03-10.png
+   :width: 80%
+
+url入力フォームに「http://google.com」を入力して、送信ボタンをクリックしましょう。
+
+.. figure:: ./images/exercise03-11.png
+   :width: 80%
+
+バックエンドの「URL短縮サービス」が呼ばれて短縮URLが表示されます。
+
+.. figure:: ./images/exercise03-12.png
+   :width: 80%
+
+表示されたURLをクリックすると\ http://google.com\ へリダイレクトされます。
+
+urlshorten-uiではHystrix + Ribbonを使用して、urlshortenのサービスをcallしています。
+
+Hystrixのevent streamは\ http://localhost:9999/hystrix.stream\ でアクセスできます。
+
+
+.. figure:: ./images/exercise03-13.png
+   :width: 80%
+
+\ `Hystrix Dashboard <http://localhost:7979>`_\ に\ http://localhost:9999/hystrix.stream\ を入力してモニタリングしてみましょう。
+
+
+.. figure:: ./images/exercise03-13.png
+   :width: 80%
+
+UIからサービスを呼び出すとモニタリング画面に反映されます。
+
+.. figure:: ./images/exercise03-12.png
    :width: 80%
 
 「URL短縮サービス」のスケールアウト
