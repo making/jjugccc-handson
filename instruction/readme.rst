@@ -659,7 +659,7 @@ restart後は、最新のプロパティで再DIされていることがわか�
     http://localhost:9999/58f3ae21
 
 
-課題1 「URL短縮サービス」(Config Client)をRefreshスコープに変更
+課題3 「URL短縮サービス」(Config Client)をRefreshスコープに変更
 --------------------------------------------------------------------------------
 「URL短縮サービス(\ ``UrlShortener``\ クラス)」へのプロパティインジェクション反映をrefreshで行えるように、
 \ ``UrlShortener``\ クラスをRefreshスコープに変更してください。
