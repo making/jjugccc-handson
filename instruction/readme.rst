@@ -289,7 +289,7 @@ Windowsの場合、redis-server.exeを実行してください。
 演習2で扱うシステムのアーキテクチャ図を以下に示します。
 
 .. figure:: ./images/exercise02-01.png
-   :width: 60%
+   :width: 40%
 
 Config Clientとして演習1で作成した「URL短縮サービス」を使用し、Config Server(作成済み)から設定を取得します。
 
