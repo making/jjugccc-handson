@@ -938,12 +938,12 @@ Hystrixのevent streamは\ http://localhost:9999/hystrix.stream\ でアクセス
 \ `Hystrix Dashboard <http://localhost:7979>`_\ に\ http://localhost:9999/hystrix.stream\ を入力してモニタリングしてみましょう。
 
 
-.. figure:: ./images/exercise03-13.png
+.. figure:: ./images/exercise03-14.png
    :width: 80%
 
 UIからサービスを呼び出すとモニタリング画面に反映されます。
 
-.. figure:: ./images/exercise03-12.png
+.. figure:: ./images/exercise03-15.png
    :width: 80%
 
 「URL短縮サービス」のスケールアウト
