@@ -231,8 +231,8 @@ JDKが未設定の場合は、「New」を押してJDKを設定してくださ�
 
 .. code-block:: bash
 
-    $ cd (ハンズオン資材のルートフォルダ)
-    $ mvn spring-boot:run -f exercise/01-urlshortener/urlshortener/pom.xml
+    $ cd (ハンズオン資材のルートフォルダ)/exercise/01-urlshortener
+    $ mvn spring-boot:run -f urlshortener/pom.xml
 
 以下の結果が返るか確認してください。
 
@@ -258,7 +258,7 @@ JDKが未設定の場合は、「New」を押してJDKを設定してくださ�
 
 .. code-block:: bash
 
-    $ mvn test -f exercise/01-urlshortener/urlshortener/pom.xml
+    $ mvn test -f urlshortener/pom.xml
 
 課題2 Redisを使ってConcurrentHashMap使用部分を書き換えましょう
 --------------------------------------------------------------------------------
