@@ -32,7 +32,7 @@ Windowsの場合、
 
 http://git-scm.com/download/win\ からGitをダウンロードしてインストールしてください。
 
-演習で実行するコマンドはGitに付属しているGit Bashを用いて実行してください。
+以下で実行するコマンドは全て\ **Gitに付属しているGit Bashを用いて実行してください**\ 。
 
 jq (オプション)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -80,8 +80,16 @@ Mavenリポジトリのコピー
 
 .. code-block:: bash
 
-    $ cp -r (ハンズオン資材のルートフォルダ)/repository/* ~/.m2/repository/
+    $ cp -rf (ハンズオン資材のルートフォルダ)/repository/* ~/.m2/repository/
 
+\ ``overwrite /Users/maki/.m2/repository/antlr/antlr/2.7.2/_maven.repositories? (y/n [n])``\ というように上書きするかどうか聞かれる場合は
+
+
+.. code-block:: bash
+
+    $ \cp -rf (ハンズオン資材のルートフォルダ)/repository/* ~/.m2/repository/
+
+を実行してください。
 
 演習の全体像
 ================================================================================
