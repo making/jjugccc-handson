@@ -1,0 +1,3 @@
+[submodule "repository"]
+	   path = repository
+	   url = https://github.com/making/repository.git
