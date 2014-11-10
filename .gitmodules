@@ -1,3 +1,6 @@
 [submodule "repository"]
 	path = repository
 	url = https://github.com/making/repository.git
+[submodule "software"]
+	path = software
+	url = https://github.com/making/software.git
